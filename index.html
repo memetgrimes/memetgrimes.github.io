@@ -2,14 +2,735 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Benim Harika Sitem</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gelişmiş Premium Konsol</title>
     <style>
-        body { background: #121214; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }
-        h1 { color: #00ffcc; }
+        /* --- TEMA RENK DEĞİŞKENLERİ --- */
+        :root {
+            --bg-main: #0d0e12;
+            --bg-container: #15161e;
+            --border-color: #2f3142;
+            --accent-color: #3182ce;
+            --tab-bg: #1c1d26;
+            --text-color: #fff;
+            --screen-tetris-border: #ff007f;
+            --screen-tetris-bg: radial-gradient(circle, #100a1c 0%, #05020a 100%);
+            --mine-cell-bg: #c0c0c0;
+            --mine-cell-border: #fff #808080 #808080 #fff;
+        }
+
+        .theme-twd {
+            --bg-main: #110d0d;
+            --bg-container: #221515;
+            --border-color: #532323;
+            --accent-color: #a30000;
+            --tab-bg: #2d1818;
+            --text-color: #d1c2c2;
+            --screen-tetris-border: #a30000;
+            --screen-tetris-bg: #1a0a0a;
+            --mine-cell-bg: #4a3535;
+            --mine-cell-border: #6e4f4f #2a1a1a #2a1a1a #6e4f4f;
+        }
+
+        .theme-got {
+            --bg-main: #12161a;
+            --bg-container: #1b2228;
+            --border-color: #d4af37;
+            --accent-color: #d4af37;
+            --tab-bg: #242e36;
+            --text-color: #e2e8f0;
+            --screen-tetris-border: #d4af37;
+            --screen-tetris-bg: #12181d;
+            --mine-cell-bg: #2d3844;
+            --mine-cell-border: #445466 #182026 #182026 #445466;
+        }
+
+        .theme-marvel {
+            --bg-main: #140d12;
+            --bg-container: #240a12;
+            --border-color: #e23636;
+            --accent-color: #00ffff;
+            --tab-bg: #3c0c1b;
+            --text-color: #ffffff;
+            --screen-tetris-border: #00ffff;
+            --screen-tetris-bg: #19050d;
+            --mine-cell-bg: #3a131a;
+            --mine-cell-border: #5c202d #1a060a #1a060a #5c202d;
+        }
+
+        .theme-breakingbad {
+            --bg-main: #060f0e;
+            --bg-container: #0d221e;
+            --border-color: #1f6032;
+            --accent-color: #3df272;
+            --tab-bg: #112d27;
+            --text-color: #e2f9e6;
+            --screen-tetris-border: #3df272;
+            --screen-tetris-bg: #051411;
+            --mine-cell-bg: #132f27;
+            --mine-cell-border: #225244 #081410 #081410 #225244;
+        }
+
+        /* --- GENEL SIFIRLAMA & YAPI --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main); color: var(--text-color);
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; width: 100vw; overflow-x: hidden; padding: 10px; transition: all 0.3s ease;
+        }
+        .container {
+            width: 100%; max-width: 550px; min-height: 95vh;
+            display: flex; flex-direction: column; justify-content: space-between;
+            background-color: var(--bg-container); border-radius: 16px; padding: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 2px solid var(--border-color);
+            transition: max-width 0.3s ease, background-color 0.3s, border-color 0.3s;
+        }
+        .container.sz-small { max-width: 400px; }
+        .container.sz-medium { max-width: 500px; }
+        .container.sz-large { max-width: 650px; }
+
+        /* --- HEADER PANEL --- */
+        .header-panel { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+        .top-meta { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+        .coin-counter { background: #2d3748; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; color: #ecc94b; display: flex; align-items: center; gap: 4px; }
+        .audio-controls { display: flex; gap: 6px; }
+        .audio-btn { background: var(--tab-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .audio-btn.active { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
+        
+        .tab-panel { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; background: var(--tab-bg); padding: 4px; border-radius: 10px; }
+        .tab-btn { background: transparent; border: none; color: var(--text-color); opacity: 0.6; padding: 8px 1px; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 6px; text-align: center; }
+        .tab-btn.active { background-color: var(--accent-color); color: #000; opacity: 1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+
+        /* --- SETTINGS BAR --- */
+        .settings-bar { display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 8px; margin-bottom: 8px; }
+        .settings-group { display: flex; gap: 4px; align-items: center; }
+        .settings-group span { font-size: 10px; font-weight: bold; opacity: 0.8; }
+        .custom-mine-input { width: 38px; background: #2d3142; border: 1px solid var(--border-color); color: white; font-size: 10px; padding: 3px; border-radius: 4px; text-align: center; }
+        button.opt-btn { padding: 4px 6px; font-size: 10px; font-weight: bold; border-radius: 4px; border: 1px solid var(--border-color); background: var(--tab-bg); color: var(--text-color); cursor: pointer; }
+        button.opt-btn.active { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
+
+        /* --- GAME SCREENS --- */
+        .game-screen { flex-grow: 1; border-radius: 12px; display: none; flex-direction: column; justify-content: space-between; padding: 12px; min-height: 48vh; position: relative; }
+        .game-screen.active { display: flex; }
+
+        /* --- TOAST NOTIFICATION --- */
+        #achieve-toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .achieve-toast { background: #2d3748; border-left: 5px solid #ecc94b; color: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: bold; min-width: 240px; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .achieve-toast.show { transform: translateX(0); }
+
+        /* --- LIST SCREENS (SHOP & ACHIEVEMENTS) --- */
+        .list-container { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 50vh; padding: 4px; }
+        .list-item { background: var(--tab-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+        .list-item-details h4 { font-size: 13px; margin-bottom: 2px; }
+        .list-item-details p { font-size: 10px; opacity: 0.7; }
+
+        /* A. MAYIN TARLASI */
+        #screen-mines { background-color: #c0c0c0; border: 3px solid; border-color: #fff #808080 #808080 #fff; color: #000; font-family: 'Courier New', monospace; }
+        .theme-twd #screen-mines, .theme-got #screen-mines, .theme-marvel #screen-mines, .theme-breakingbad #screen-mines { background-color: var(--bg-container); border: 2px solid var(--border-color); color: var(--text-color); }
+        #screen-mines .status-bar { background-color: #c0c0c0; border: 2px solid; border-color: #808080 #fff #fff #808080; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+        .theme-twd #screen-mines .status-bar, .theme-got #screen-mines .status-bar, .theme-marvel #screen-mines .status-bar, .theme-breakingbad #screen-mines .status-bar { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-color); }
+        #screen-mines .mine-grid-wrapper { background: #808080; border: 3px solid; border-color: #808080 #fff #fff #808080; flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 6px; overflow: auto; }
+        .theme-twd #screen-mines .mine-grid-wrapper, .theme-got #screen-mines .mine-grid-wrapper, .theme-marvel #screen-mines .mine-grid-wrapper, .theme-breakingbad #screen-mines .mine-grid-wrapper { background: transparent; border: 1px solid var(--border-color); }
+        #mines-board { display: grid; gap: 1px; background-color: #808080; }
+        .theme-twd #mines-board, .theme-got #mines-board, .theme-marvel #mines-board, .theme-breakingbad #mines-board { background-color: var(--border-color); }
+        #mines-board .cell { background-color: var(--mine-cell-bg); border: 2px solid; border-color: var(--mine-cell-border); display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        #mines-board .cell.revealed { background-color: #bdbdbd; border: 1px solid #7b7b7b; cursor: default; }
+        .theme-twd #mines-board .cell.revealed, .theme-got #mines-board .cell.revealed, .theme-marvel #mines-board .cell.revealed, .theme-breakingbad #mines-board .cell.revealed { background-color: rgba(0,0,0,0.4); border: 1px solid var(--border-color); }
+
+        /* B. TETRIS */
+        #screen-tetris { background: var(--screen-tetris-bg); border: 2px solid var(--screen-tetris-border); }
+        #screen-tetris .status-bar { display: flex; justify-content: space-around; color: var(--accent-color); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid rgba(0, 255, 204, 0.2); padding-bottom: 6px; margin-bottom: 8px; }
+        #screen-tetris canvas { border: 2px solid var(--accent-color); background: #030106; margin: auto; }
+
+        /* C. 2048 */
+        #screen-g2048 { background-color: #faf8ef; color: #776e65; border: 2px solid #bbada0; }
+        .theme-twd #screen-g2048, .theme-got #screen-g2048, .theme-marvel #screen-g2048, .theme-breakingbad #screen-g2048 { background-color: var(--bg-main); color: var(--text-color); border-color: var(--border-color); }
+        #screen-g2048 .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        #screen-g2048 .score-container { background: #bbada0; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: bold; text-align: center; min-width: 65px; font-size: 11px; }
+        .theme-twd #screen-g2048 .score-container, .theme-got #screen-g2048 .score-container, .theme-marvel #screen-g2048 .score-container, .theme-breakingbad #screen-g2048 .score-container { background: var(--tab-bg); color: var(--text-color); border: 1px solid var(--border-color); }
+        #grid-2048-wrapper { flex-grow: 1; background-color: #bbada0; border-radius: 8px; padding: 6px; display: grid; gap: 6px; width: 100%; margin: auto; }
+        .theme-twd #grid-2048-wrapper, .theme-got #grid-2048-wrapper, .theme-marvel #grid-2048-wrapper, .theme-breakingbad #grid-2048-wrapper { background-color: var(--bg-container); border: 1px solid var(--border-color); }
+        .tile-2048 { background-color: rgba(238, 228, 218, 0.35); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #776e65; transition: all 0.1s ease-in-out; }
+        .theme-twd .tile-2048, .theme-got .tile-2048, .theme-marvel .tile-2048, .theme-breakingbad .tile-2048 { color: #fff; background-color: rgba(255,255,255,0.05); }
+        .val-2 { background: #eee4da; color: #776e65; } .val-4 { background: #ede0c8; color: #776e65; } .val-8 { background: #f2b179; color: #f9f6f2; } .val-16 { background: #f59563; color: #f9f6f2; } .val-32 { background: #f67c5f; color: #f9f6f2; } .val-64 { background: #f65e3b; color: #f9f6f2; } .val-128 { background: #edcf72; color: #f9f6f2; } .val-256 { background: #edcc61; color: #f9f6f2; } .val-512 { background: #edc850; color: #f9f6f2; } .val-1024 { background: #edc53f; color: #f9f6f2; } .val-2048 { background: #edc22e; color: #f9f6f2; }
+
+        /* D. YILAN */
+        #screen-snake { background-color: #8bab1d; border: 4px solid #556010; color: #0f1c04; font-family: monospace; }
+        .theme-twd #screen-snake, .theme-got #screen-snake, .theme-marvel #screen-snake, .theme-breakingbad #screen-snake { background-color: var(--bg-container); border: 2px solid var(--border-color); color: var(--text-color); }
+        #screen-snake .status-bar { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 2px solid #556010; padding-bottom: 4px; font-size: 14px; margin-bottom: 8px; }
+        .theme-twd #screen-snake .status-bar, .theme-got #screen-snake .status-bar, .theme-marvel #screen-snake .status-bar, .theme-breakingbad #screen-snake .status-bar { border-bottom-color: var(--border-color); color: var(--text-color); }
+        #screen-snake canvas { background-color: #9bbc0f; border: 2px solid #556010; margin: auto; }
+        .theme-twd #screen-snake canvas, .theme-got #screen-snake canvas, .theme-marvel #screen-snake canvas, .theme-breakingbad #screen-snake canvas { background-color: #000; border-color: var(--border-color); }
+
+        /* DPAD */
+        .dpad-container { padding: 8px 0; background: var(--tab-bg); border-radius: 12px; margin-top: 8px; }
+        .dpad { display: grid; grid-template-areas: ". up ." "left action right" ". down ."; gap: 4px; width: 140px; margin: 0 auto; }
+        .dpad button { padding: 12px; font-size: 14px; border-radius: 8px; background-color: var(--bg-container); border: 1px solid var(--border-color); color: var(--text-color); font-weight: bold; cursor: pointer; }
+        .dpad button:active { background-color: var(--accent-color); color: #000; }
+        .c-1 { color: #0000ff; } .c-2 { color: #008000; } .c-3 { color: #ff0000; } .c-4 { color: #000080; }
     </style>
 </head>
 <body>
-    <h1>Merhaba Dünya!</h1>
-    <p>Bu siteyi GitHub Pages kullanarak ücretsiz yayınladım. 🎉</p>
+
+<div id="achieve-toast-container"></div>
+
+<div class="container sz-medium" id="main-container">
+    
+    <div class="header-panel">
+        <div class="top-meta">
+            <div class="coin-counter">🪙 Jeton: <span id="coin-amount">0</span></div>
+            <div class="audio-controls">
+                <button id="btn-music" class="audio-btn active" onclick="toggleMusic()">🎵 Müzik</button>
+                <button id="btn-sfx" class="audio-btn active" onclick="toggleSfx()">🔊 Efekt</button>
+            </div>
+        </div>
+        <div class="tab-panel">
+            <button id="tabMines" class="tab-btn active" onclick="switchGame('mines')">💣 Mayın</button>
+            <button id="tabTetris" class="tab-btn" onclick="switchGame('tetris')">🧱 Tetris</button>
+            <button id="tabG2048" class="tab-btn" onclick="switchGame('g2048')">🔢 2048</button>
+            <button id="tabSnake" class="tab-btn" onclick="switchGame('snake')">🐍 Yılan</button>
+            <button id="tabShop" class="tab-btn" onclick="switchGame('shop')">🛒 Mağaza</button>
+            <button id="tabAchieve" class="tab-btn" onclick="switchGame('achieve')">🏆 Ödül</button>
+        </div>
+    </div>
+
+    <div id="screen-mines" class="game-screen active">
+        <div class="settings-bar">
+            <div class="settings-group">
+                <span>ZORLUK:</span>
+                <button id="m-diff-easy" class="opt-btn" onclick="setMinesDiff('easy')">K</button>
+                <button id="m-diff-normal" class="opt-btn active" onclick="setMinesDiff('normal')">O</button>
+                <button id="m-diff-hard" class="opt-btn" onclick="setMinesDiff('hard')">Z</button>
+            </div>
+            <div class="settings-group">
+                <span>ÖZEL:</span>
+                <input type="number" id="m-custom-count" class="custom-mine-input" min="5" max="80" value="20">
+                <button class="opt-btn" onclick="applyCustomMines()">Set</button>
+            </div>
+            <div class="settings-group">
+                <span>BOYUT:</span>
+                <button id="m-size-s" class="opt-btn" onclick="setGameSize('small')">K</button>
+                <button id="m-size-m" class="opt-btn active" onclick="setGameSize('medium')">O</button>
+            </div>
+        </div>
+        <div class="status-bar">
+            <div>⚙️ <span id="mines-left">0</span></div>
+            <div id="smiley" style="cursor: pointer; font-size: 18px;" onclick="initMines()">😊</div>
+            <div>⏱️ <span id="mines-timer">000</span></div>
+        </div>
+        <div class="mine-grid-wrapper"> <div id="mines-board"></div> </div>
+    </div>
+
+    <div id="screen-tetris" class="game-screen">
+        <div class="settings-bar">
+            <div class="settings-group">
+                <span>ZORLUK:</span>
+                <button id="t-diff-easy" class="opt-btn" onclick="setTetrisDiff('easy')">Kolay</button>
+                <button id="t-diff-normal" class="opt-btn active" onclick="setTetrisDiff('normal')">Orta</button>
+            </div>
+            <div class="settings-group">
+                <span>BOYUT:</span>
+                <button id="t-size-s" class="opt-btn" onclick="setGameSize('small')">K</button>
+                <button id="t-size-m" class="opt-btn active" onclick="setGameSize('medium')">O</button>
+            </div>
+        </div>
+        <div class="status-bar">
+            <div>SKOR: <span id="tetris-score">0</span></div>
+            <div>SEVİYE: <span id="tetris-level">1</span></div>
+        </div>
+        <canvas id="tetris-canvas"></canvas>
+    </div>
+
+    <div id="screen-g2048" class="game-screen">
+        <div class="settings-bar">
+            <div class="settings-group">
+                <span>BOYUT:</span>
+                <button id="g-size-s" class="opt-btn" onclick="setGameSize('small')">K</button>
+                <button id="g-size-m" class="opt-btn active" onclick="setGameSize('medium')">O</button>
+            </div>
+        </div>
+        <div class="status-bar">
+            <div style="font-size: 16px; font-weight: bold;" id="title-2048">2048</div>
+            <div style="display: flex; gap: 4px;">
+                <div class="score-container">SKOR<br><span id="g2048-score">0</span></div>
+                <div class="score-container">REKOR<br><span id="g2048-best">0</span></div>
+            </div>
+        </div>
+        <div id="grid-2048-wrapper"></div>
+    </div>
+
+    <div id="screen-snake" class="game-screen">
+        <div class="settings-bar">
+            <div class="settings-group">
+                <span>HIZ:</span>
+                <button id="s-diff-easy" class="opt-btn" onclick="setSnakeDiff('easy')">Yavaş</button>
+                <button id="s-diff-normal" class="opt-btn active" onclick="setSnakeDiff('normal')">Orta</button>
+            </div>
+            <div class="settings-group">
+                <span>BOYUT:</span>
+                <button id="s-size-s" class="opt-btn" onclick="setGameSize('small')">K</button>
+                <button id="s-size-m" class="opt-btn active" onclick="setGameSize('medium')">O</button>
+            </div>
+        </div>
+        <div class="status-bar">
+            <div>SKOR: <span id="snake-score">0</span></div>
+            <div>REKOR: <span id="snake-best">0</span></div>
+        </div>
+        <canvas id="snake-canvas"></canvas>
+    </div>
+
+    <div id="screen-shop" class="game-screen">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h3>🎭 Premium Tema Dükkanı</h3>
+            <p style="font-size: 10px; opacity: 0.7;">Pahalı temalar özel ses efektleri ve oyun içi görseller içerir!</p>
+        </div>
+        <div class="list-container" id="shop-items-container"></div>
+    </div>
+
+    <div id="screen-achieve" class="game-screen">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h3>🏆 Başarımlar Listen</h3>
+            <p style="font-size: 10px; opacity: 0.7;">Görevleri tamamla, konsol madalyalarını topla!</p>
+        </div>
+        <div class="list-container" id="achieve-items-container"></div>
+    </div>
+
+    <div class="dpad-container">
+        <div class="dpad">
+            <button style="grid-area: up;" onclick="sendInput('UP')">▲</button>
+            <button style="grid-area: left;" onclick="sendInput('LEFT')">◀</button>
+            <button style="grid-area: action; background-color: var(--accent-color); color: #000;" onclick="sendInput('ACTION')">🔄</button>
+            <button style="grid-area: right;" onclick="sendInput('RIGHT')">▶</button>
+            <button style="grid-area: down;" onclick="sendInput('DOWN')">▼</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeGame = 'mines';
+    let currentGlobalSize = 'medium';
+
+    let coins = parseInt(localStorage.getItem('console_coins') || 0);
+    let unlockedThemes = JSON.parse(localStorage.getItem('unlocked_themes') || '["theme-classic"]');
+    let currentTheme = localStorage.getItem('active_theme') || 'theme-classic';
+    let earnedAchievements = JSON.parse(localStorage.getItem('earned_achievements') || '[]');
+
+    const THEMES = [
+        { id: 'theme-classic', name: 'Klasik Retro', price: 0, desc: 'Orijinal arcade sesleri ve standart tasarımı.' },
+        { id: 'theme-twd', name: 'The Walking Dead (Rare)', price: 50, desc: 'Özel Zombi Mayınları ve boğuk distopik ses tonları.' },
+        { id: 'theme-got', name: 'Game of Thrones (Epic)', price: 100, desc: 'Ejderha Yumurtası mayınları ve kılıç çarpışma sesleri!' },
+        { id: 'theme-marvel', name: 'Marvel (Legendary)', price: 150, desc: 'Sonsuzluk Taşı yılan yemleri ve fütüristik lazer sesleri!' },
+        { id: 'theme-breakingbad', name: 'Breaking Bad (Mythic)', price: 200, desc: 'Kimyasal 2048 elementleri, sıvı fokurdama ve cam kırma ses efektleri!' }
+    ];
+
+    const ACHIEVEMENTS = {
+        'mines_first': { title: 'İlk Adım', desc: 'Mayın Tarlası\'nda ilk kareyi güvenle açtın.' },
+        'mines_win': { title: 'Bomba Uzmanı', desc: 'Bir Mayın Tarlası oyununu hatasız tamamla.' },
+        'tetris_1000': { title: 'Mimar', desc: 'Tetris oyununda 1000 skora ulaş.' },
+        'tetris_quad': { title: 'Tetris Master', desc: 'Tetris\'te tek seferde 4 satır birden sil!' },
+        'g2048_512': { title: 'Matematik Dehası', desc: '2048 oyununda 512 bloğu yap.' },
+        'g2048_1024': { title: 'Yolun Yarısı', desc: '2048 oyununda 1024 bloğunu aç.' },
+        'snake_100': { title: 'Doyumsuz', desc: 'Yılan ile 100 skora ulaş.' },
+        'rich_300': { title: 'Kripto Kralı', desc: 'Cüzdanındaki toplam jetonu 300 yap.' }
+    };
+
+    function updateCoins(amount) {
+        coins += amount;
+        localStorage.setItem('console_coins', coins);
+        document.getElementById('coin-amount').textContent = coins;
+        if (coins >= 300) triggerAchievement('rich_300');
+    }
+
+    function triggerAchievement(id) {
+        if (earnedAchievements.includes(id)) return;
+        earnedAchievements.push(id);
+        localStorage.setItem('earned_achievements', JSON.stringify(earnedAchievements));
+        
+        // Başarım sesi
+        playPremiumSfx(1200, 0.1); setTimeout(() => playPremiumSfx(1500, 0.2), 80);
+
+        const toastContainer = document.getElementById('achieve-toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'achieve-toast';
+        toast.innerHTML = `
+            <div style="font-size:20px;">🏆</div>
+            <div>
+                <div style="color:#ecc94b; font-size:10px; text-transform:uppercase;">MİLLET DUYSUN!</div>
+                <div style="font-size:12px; margin:1px 0;">${ACHIEVEMENTS[id].title}</div>
+            </div>
+        `;
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 50);
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2500);
+    }
+
+    function renderShop() {
+        const container = document.getElementById('shop-items-container'); container.innerHTML = '';
+        THEMES.forEach(t => {
+            const isUnlocked = unlockedThemes.includes(t.id);
+            const isActive = currentTheme === t.id;
+            let btnHtml = isActive ? `<button class="opt-btn active" disabled>Aktif</button>` :
+                          isUnlocked ? `<button class="opt-btn" onclick="applyTheme('${t.id}')">Seç</button>` :
+                          `<button class="opt-btn" style="background:#ecc94b; color:#000;" onclick="buyTheme('${t.id}', ${t.price})">🪙 ${t.price}</button>`;
+            const item = document.createElement('div'); item.className = 'list-item';
+            item.innerHTML = `<div class="list-item-details"><h4>${t.name}</h4><p>${t.desc}</p></div><div>${btnHtml}</div>`;
+            container.appendChild(item);
+        });
+    }
+
+    function renderAchievements() {
+        const container = document.getElementById('achieve-items-container'); container.innerHTML = '';
+        Object.keys(ACHIEVEMENTS).forEach(id => {
+            const hasIt = earnedAchievements.includes(id);
+            const item = document.createElement('div'); item.className = 'list-item';
+            item.style.opacity = hasIt ? '1' : '0.4';
+            item.innerHTML = `
+                <div class="list-item-details">
+                    <h4>${hasIt ? '✅' : '🔒'} ${ACHIEVEMENTS[id].title}</h4>
+                    <p>${ACHIEVEMENTS[id].desc}</p>
+                </div>
+                <div style="font-size:11px; font-weight:bold; color:#ecc94b;">${hasIt ? 'AÇILDI' : 'KİLİTLİ'}</div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function buyTheme(id, price) {
+        if (coins >= price) {
+            updateCoins(-price); unlockedThemes.push(id);
+            localStorage.setItem('unlocked_themes', JSON.stringify(unlockedThemes));
+            applyTheme(id); renderShop();
+        } else {
+            playPremiumSfx(120, 0.4, 'sawtooth'); alert('Jetonun yetersiz dostum!');
+        }
+    }
+
+    function applyTheme(id) {
+        currentTheme = id; localStorage.setItem('active_theme', id);
+        document.body.className = id === 'theme-classic' ? '' : id;
+        renderShop(); initMines(); init2048();
+    }
+
+    // --- GELİŞMİŞ/PAHALI TEMAYA ÖZEL SES MOTORU ---
+    let audioCtx = null; let musicEnabled = true; let sfxEnabled = true; let musicInterval = null; let noteIndex = 0;
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    function toggleMusic() { musicEnabled = !musicEnabled; document.getElementById('btn-music').classList.toggle('active', musicEnabled); initAudio(); if (!musicEnabled) clearInterval(musicInterval); else playBackgroundMusic(); }
+    function toggleSfx() { sfxEnabled = !sfxEnabled; document.getElementById('btn-sfx').classList.toggle('active', sfxEnabled); initAudio(); }
+
+    function playPremiumSfx(baseFreq, duration, forceType = null) {
+        if (!sfxEnabled) return; initAudio();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        
+        let type = forceType || 'sine';
+        let freq = baseFreq;
+
+        // Tema pahalıysa ses efektlerini tamamen dönüştür
+        if (!forceType) {
+            if (currentTheme === 'theme-twd') { type = 'sawtooth'; freq = baseFreq * 0.7; } 
+            else if (currentTheme === 'theme-got') { type = 'triangle'; freq = baseFreq * 1.2; } 
+            else if (currentTheme === 'theme-marvel') { type = 'sine'; freq = baseFreq * 1.8; } 
+            else if (currentTheme === 'theme-breakingbad') { type = 'square'; freq = baseFreq * 0.9; }
+        }
+
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const SONGS = { mines:[140,160,140], tetris:[650,520,580,440], g2048:[300,400,500], snake:[200,250,220] };
+    function playBackgroundMusic() {
+        clearInterval(musicInterval); if (!musicEnabled || ['shop','achieve'].includes(activeGame)) return;
+        initAudio(); noteIndex = 0;
+        musicInterval = setInterval(() => {
+            const song = SONGS[activeGame]; if (!song) return;
+            const note = song[noteIndex % song.length];
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(note, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.28); noteIndex++;
+        }, 350);
+    }
+
+    function setGameSize(size) {
+        currentGlobalSize = size;
+        document.getElementById('main-container').className = 'container sz-' + size;
+        document.querySelectorAll('[id$="-size-s"], [id$="-size-m"]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(`[id$="-size-${size==='small'?'s':'m'}" ]`).forEach(b => b.classList.add('active'));
+        if (activeGame === 'mines') initMines(); else if (activeGame === 'tetris') initTetris(); else if (activeGame === 'g2048') init2048(); else if (activeGame === 'snake') initSnake();
+    }
+
+    function switchGame(game) {
+        activeGame = game;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('tab' + game.charAt(0).toUpperCase() + game.slice(1)).classList.add('active');
+        document.getElementById('screen-' + game).classList.add('active');
+        clearInterval(minesInterval); cancelAnimationFrame(tetrisAnimId); clearInterval(snakeInterval);
+        if (game === 'shop') renderShop(); else if (game === 'achieve') renderAchievements();
+        setGameSize(currentGlobalSize); playBackgroundMusic();
+    }
+
+    // ==========================================
+    // 1. MAYIN TARLASI (PREMİUM GÖRSELLİ)
+    // ==========================================
+    let mRows = 12, mCols = 12, mMines = 20, mBoard = [], mRevealed = 0, mFlagged = 0, mOver = false, mFirst = true, minesInterval = null, mSecs = 0;
+    function getMineIcon() {
+        if (currentTheme === 'theme-twd') return '🧟';
+        if (currentTheme === 'theme-got') return '🥚';
+        if (currentTheme === 'theme-marvel') return '💥';
+        if (currentTheme === 'theme-breakingbad') return '🧪';
+        return '💣';
+    }
+
+    function setMinesDiff(diff) {
+        document.querySelectorAll('[id^="m-diff-"]').forEach(b => b.classList.remove('active'));
+        document.getElementById(`m-diff-${diff}`).classList.add('active');
+        mRows = diff === 'easy' ? 9 : diff === 'normal' ? 12 : 14;
+        mCols = diff === 'easy' ? 9 : diff === 'normal' ? 12 : 14;
+        mMines = diff === 'easy' ? 10 : diff === 'normal' ? 20 : 35;
+        document.getElementById('m-custom-count').value = mMines; initMines();
+    }
+    function applyCustomMines() { let val = parseInt(document.getElementById('m-custom-count').value); if(!isNaN(val) && val > 2) { mMines = val; initMines(); } }
+    
+    function initMines() {
+        mBoard = []; mRevealed = 0; mFlagged = 0; mOver = false; mFirst = true; mSecs = 0;
+        document.getElementById('smiley').textContent = '😊'; document.getElementById('mines-left').textContent = mMines;
+        document.getElementById('mines-timer').textContent = '000'; clearInterval(minesInterval);
+        const wrapper = document.querySelector('.mine-grid-wrapper');
+        const size = Math.min(Math.floor((wrapper.clientWidth-12)/mCols), Math.floor((wrapper.clientHeight-12)/mRows));
+        const boardEl = document.getElementById('mines-board'); boardEl.style.gridTemplateColumns = `repeat(${mCols}, ${size}px)`; boardEl.innerHTML = '';
+
+        for (let r = 0; r < mRows; r++) {
+            mBoard[r] = [];
+            for (let c = 0; c < mCols; c++) {
+                const cell = { r, c, isMine: false, isRevealed: false, isFlagged: false, nVal: 0, element: document.createElement('div') };
+                cell.element.classList.add('cell'); cell.element.style.width = cell.element.style.height = `${size}px`; cell.element.style.fontSize = `${size*0.5}px`;
+                cell.element.addEventListener('click', () => clickMines(cell));
+                cell.element.addEventListener('contextmenu', (e) => { e.preventDefault(); flagMines(cell); });
+                boardEl.appendChild(cell.element); mBoard[r][c] = cell;
+            }
+        }
+    }
+    function clickMines(cell) {
+        if (mOver || cell.isRevealed || cell.isFlagged) return;
+        if (mFirst) { mFirst = false; triggerAchievement('mines_first'); generateMines(cell.r, cell.c); minesInterval = setInterval(() => { mSecs = Math.min(mSecs+1, 999); document.getElementById('mines-timer').textContent = String(mSecs).padStart(3,'0'); }, 1000); }
+        if (cell.isMine) { gameOverMines(false); } 
+        else { playPremiumSfx(600, 0.05); revealMines(cell.r, cell.c); if (mRevealed === (mRows * mCols) - mMines) gameOverMines(true); }
+    }
+    function flagMines(cell) { if(mOver || cell.isRevealed) return; playPremiumSfx(350, 0.05); cell.isFlagged = !cell.isFlagged; cell.element.textContent = cell.isFlagged ? '🚩' : ''; mFlagged += cell.isFlagged ? 1 : -1; document.getElementById('mines-left').textContent = mMines - mFlagged; }
+    function revealMines(r, c) {
+        const cell = mBoard[r][c]; if (cell.isRevealed || cell.isFlagged) return;
+        cell.isRevealed = true; cell.element.classList.add('revealed'); mRevealed++;
+        if (cell.nVal > 0) { cell.element.textContent = cell.nVal; cell.element.classList.add(`c-${cell.nVal}`); } 
+        else {
+            for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { const nr = r + dr, nc = c + dc; if (nr >= 0 && nr < mRows && nc >= 0 && nc < mCols) revealMines(nr, nc); } }
+        }
+    }
+    function generateMines(exR, exC) {
+        let placed = 0; while (placed < mMines) {
+            const r = Math.floor(Math.random() * mRows), c = Math.floor(Math.random() * mCols);
+            if (!mBoard[r][c].isMine && (Math.abs(r - exR) > 1 || Math.abs(c - exC) > 1)) { mBoard[r][c].isMine = true; placed++; }
+        }
+        for (let r = 0; r < mRows; r++) {
+            for (let c = 0; c < mCols; c++) {
+                if (!mBoard[r][c].isMine) {
+                    let count = 0; for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { const nr = r + dr, nc = c + dc; if (nr >= 0 && nr < mRows && nc >= 0 && nc < mCols && mBoard[nr][nc].isMine) count++; } }
+                    mBoard[r][c].nVal = count;
+                }
+            }
+        }
+    }
+    function gameOverMines(isWin) {
+        mOver = true; clearInterval(minesInterval); document.getElementById('smiley').textContent = isWin ? '😎' : '😵';
+        playPremiumSfx(isWin ? 800 : 130, 0.4, isWin ? 'sine' : 'sawtooth');
+        for (let r = 0; r < mRows; r++) { for (let c = 0; c < mCols; c++) { if (mBoard[r][c].isMine) mBoard[r][c].element.textContent = isWin ? '🚩' : getMineIcon(); } }
+        if (isWin) { triggerAchievement('mines_win'); updateCoins(25); }
+    }
+
+    // ==========================================
+    // 2. TETRIS
+    // ==========================================
+    const tCanvas = document.getElementById('tetris-canvas'); const tCtx = tCanvas.getContext('2d');
+    let tGrid = [], tScore = 0, tLines = 0, tLevel = 1, tGameOver = false, tDropCounter = 0, tDropInterval = 1000, tBaseInterval = 1000, tLastTime = 0, tPiece = null, tNextPiece = null, tetrisAnimId = null;
+    const tColors = [null, '#ff007f', '#39ff14', '#00ffcc', '#ffff00', '#ff00ff', '#0000ff', '#ff9900'];
+    function setTetrisDiff(diff) { tBaseInterval = diff === 'easy' ? 1200 : 900; initTetris(); }
+    function initTetris() {
+        tGameOver = false; tScore = 0; tLines = 0; tLevel = 1; tDropInterval = tBaseInterval;
+        document.getElementById('tetris-score').textContent = '0'; document.getElementById('tetris-level').textContent = '1';
+        tGrid = Array.from({length: 20}, () => Array(10).fill(0));
+        const wrapper = document.getElementById('screen-tetris');
+        const size = Math.min(Math.floor((wrapper.clientHeight - 100) / 20), Math.floor((wrapper.clientWidth - 20) / 10));
+        tCanvas.width = size * 10; tCanvas.height = size * 20; tCtx.scale(size, size);
+        tPiece = createTetrisPiece(); tNextPiece = createTetrisPiece(); tLastTime = 0;
+        cancelAnimationFrame(tetrisAnimId); runTetris();
+    }
+    function createTetrisPiece() {
+        const types = 'IOTSZJL'; const type = types[Math.floor(Math.random() * types.length)]; let matrix;
+        if (type === 'I') matrix = [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]]; else if (type === 'O') matrix = [[2,2],[2,2]]; else if (type === 'T') matrix = [[0,3,0],[3,3,3],[0,0,0]]; else if (type === 'S') matrix = [[0,4,4],[4,4,0],[0,0,0]]; else if (type === 'Z') matrix = [[5,5,0],[0,5,5],[0,0,0]]; else if (type === 'J') matrix = [[0,6,0],[0,6,0],[6,6,0]]; else if (type === 'L') matrix = [[0,7,0],[0,7,0],[0,7,7]];
+        return { matrix, pos: {x: 3, y: 0} };
+    }
+    function runTetris(time = 0) {
+        if (tGameOver || activeGame !== 'tetris') return;
+        const dT = time - tLastTime; tLastTime = time; tDropCounter += dT;
+        if (tDropCounter > tDropInterval) {
+            tPiece.pos.y++; if (collideTetris()) { tPiece.pos.y--; mergeTetris(); sweepTetris(); tPiece = tNextPiece; tNextPiece = createTetrisPiece(); if (collideTetris()) { tGameOver = true; playPremiumSfx(120, 0.6, 'sawtooth'); alert('Oyun Bitti!'); } }
+            tDropCounter = 0;
+        }
+        tCtx.fillStyle = '#030106'; tCtx.fillRect(0,0,tCanvas.width,tCanvas.height);
+        drawTetrisMatrix(tGrid, {x:0, y:0}); drawTetrisMatrix(tPiece.matrix, tPiece.pos);
+        tetrisAnimId = requestAnimationFrame(runTetris);
+    }
+    function drawTetrisMatrix(m, offset) { m.forEach((row, y) => row.forEach((v, x) => { if (v !== 0) { tCtx.fillStyle = tColors[v]; tCtx.fillRect(x + offset.x, y + offset.y, 0.92, 0.92); } })); }
+    function collideTetris() {
+        const m = tPiece.matrix; for (let y = 0; y < m.length; ++y) { for (let x = 0; x < m[y].length; ++x) { if (m[y][x] !== 0 && (tGrid[y + tPiece.pos.y] === undefined || tGrid[y + tPiece.pos.y][x + tPiece.pos.x] === undefined || tGrid[y + tPiece.pos.y][x + tPiece.pos.x] !== 0)) return true; } } return false;
+    }
+    function mergeTetris() { tPiece.matrix.forEach((row, y) => row.forEach((v, x) => { if (v !== 0) tGrid[y + tPiece.pos.y][x + tPiece.pos.x] = v; })); }
+    function sweepTetris() {
+        let cleared = 0;
+        for (let y = tGrid.length - 1; y > 0; --y) { if (tGrid[y].every(v => v !== 0)) { tGrid.splice(y, 1); tGrid.unshift(Array(10).fill(0)); y++; cleared++; tScore += 100; updateCoins(5); } }
+        if (cleared > 0) { playPremiumSfx(850, 0.2); if(cleared === 4) { triggerAchievement('tetris_quad'); updateCoins(20); } }
+        tLevel = Math.floor(tLines / 10) + 1; tDropInterval = Math.max(tBaseInterval - (tLevel * 70), 100);
+        document.getElementById('tetris-score').textContent = tScore; document.getElementById('tetris-level').textContent = tLevel;
+        if (tScore >= 1000) triggerAchievement('tetris_1000');
+    }
+
+    // ==========================================
+    // 3. 2048 (PREMİUM ELEMENT GÖRSELLİ)
+    // ==========================================
+    let grid2048 = [], score2048 = 0, gSize = 4;
+    function get2048Text(val) {
+        if (!val) return '';
+        // Breaking bad modu aktifse kimyasal element simgeleri bas
+        if (currentTheme === 'theme-breakingbad') {
+            const elements = { 2:'H', 4:'He', 8:'Li', 16:'Be', 32:'B', 64:'C', 128:'N', 256:'O', 512:'F', 1024:'Ne', 2048:'Na' };
+            return elements[val] || val;
+        }
+        return val;
+    }
+
+    function init2048() {
+        score2048 = 0; document.getElementById('g2048-score').textContent = '0';
+        document.getElementById('g2048-best').textContent = localStorage.getItem('best_2048') || '0';
+        document.getElementById('title-2048').textContent = currentTheme === 'theme-breakingbad' ? 'Breaking 2048' : '2048';
+        grid2048 = Array.from({length: gSize}, () => Array(gSize).fill(0));
+        const wrapper = document.getElementById('grid-2048-wrapper'); wrapper.innerHTML = '';
+        wrapper.style.gridTemplateColumns = `repeat(${gSize}, 1fr)`; wrapper.style.gridTemplateRows = `repeat(${gSize}, 1fr)`;
+        const screen = document.getElementById('screen-g2048'); const sideSize = Math.min(screen.clientWidth - 30, screen.clientHeight - 130);
+        wrapper.style.width = wrapper.style.height = `${sideSize}px`;
+
+        for (let r = 0; r < gSize; r++) {
+            for (let c = 0; c < gSize; c++) {
+                const cell = document.createElement('div'); cell.className = 'tile-2048'; cell.id = `t2048-${r}-${c}`; cell.style.fontSize = '20px';
+                wrapper.appendChild(cell);
+            }
+        }
+        spawn2048(); spawn2048(); update2048Display();
+    }
+    function spawn2048() {
+        let empty = []; for (let r = 0; r < gSize; r++) { for (let c = 0; c < gSize; c++) { if (grid2048[r][c] === 0) empty.push({r, c}); } }
+        if (empty.length > 0) { const {r, c} = empty[Math.floor(Math.random() * empty.length)]; grid2048[r][c] = Math.random() < 0.9 ? 2 : 4; }
+    }
+    function update2048Display() {
+        for (let r = 0; r < gSize; r++) {
+            for (let c = 0; c < gSize; c++) {
+                const val = grid2048[r][c]; const cell = document.getElementById(`t2048-${r}-${c}`);
+                cell.className = 'tile-2048' + (val ? ` val-${val}` : ''); cell.textContent = get2048Text(val);
+                if (val >= 512) triggerAchievement('g2048_512'); if (val >= 1024) triggerAchievement('g2048_1024');
+            }
+        }
+        document.getElementById('g2048-score').textContent = score2048;
+    }
+    function move2048(direction) {
+        let moved = false;
+        function slideRow(row) {
+            let filtered = row.filter(val => val !== 0); let result = [];
+            for (let i = 0; i < filtered.length; i++) {
+                if (filtered[i] === filtered[i + 1]) { result.push(filtered[i] * 2); score2048 += filtered[i] * 2; updateCoins(1); playPremiumSfx(680, 0.05); i++; moved = true; } 
+                else { result.push(filtered[i]); }
+            }
+            while (result.length < gSize) result.push(0); return result;
+        }
+        function rotateGrid() {
+            let next = Array.from({length: gSize}, () => Array(gSize).fill(0));
+            for (let r = 0; r < gSize; r++) { for (let c = 0; c < gSize; c++) { next[c][gSize - 1 - r] = grid2048[r][c]; } } grid2048 = next;
+        }
+        let rotations = direction === 'UP' ? 3 : direction === 'RIGHT' ? 2 : direction === 'DOWN' ? 1 : 0;
+        for (let i = 0; i < rotations; i++) rotateGrid();
+        for (let r = 0; r < gSize; r++) { let newRow = slideRow(grid2048[r]); if (JSON.stringify(grid2048[r]) !== JSON.stringify(newRow)) moved = true; grid2048[r] = newRow; }
+        for (let i = 0; i < (4 - rotations) % 4; i++) rotateGrid();
+        if (moved) { spawn2048(); update2048Display(); }
+    }
+
+    // ==========================================
+    // 4. YILAN (PREMİUM GÖRSELLİ)
+    // ==========================================
+    const sCanvas = document.getElementById('snake-canvas'); const sCtx = sCanvas.getContext('2d');
+    let snake = [], sFood = {x:0, y:0}, sDir = 'RIGHT', snakeInterval = null, sScore = 0, sBaseSpeed = 150;
+    function getFoodColor() {
+        if (currentTheme === 'theme-marvel') {
+            // Marvel modunda Sonsuzluk Taşları renklerinde yanıp sönsün
+            const colors = ['#f5222d', '#fa8c16', '#fadb14', '#52c41a', '#1890ff', '#722ed1'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+        return '#0f1c04';
+    }
+
+    function setSnakeDiff(diff) { sBaseSpeed = diff === 'easy' ? 200 : 130; initSnake(); }
+    function initSnake() {
+        sScore = 0; sDir = 'RIGHT'; document.getElementById('snake-score').textContent = '0';
+        document.getElementById('snake-best').textContent = localStorage.getItem('best_snake') || '0';
+        const wrapper = document.getElementById('screen-snake');
+        const size = Math.min(Math.floor((wrapper.clientHeight - 100) / 20), Math.floor((wrapper.clientWidth - 20) / 20));
+        sCanvas.width = sCanvas.height = size * 20; snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+        spawnSnakeFood(); clearInterval(snakeInterval); snakeInterval = setInterval(runSnake, sBaseSpeed);
+    }
+    function spawnSnakeFood() { sFood = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) }; if (snake.some(p => p.x === sFood.x && p.y === sFood.y)) spawnSnakeFood(); }
+    function runSnake() {
+        if (activeGame !== 'snake') return;
+        let head = { ...snake[0] };
+        if (sDir === 'LEFT') head.x--; else if (sDir === 'RIGHT') head.x++; else if (sDir === 'UP') head.y--; else if (sDir === 'DOWN') head.y++;
+        if (head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20 || snake.some(p => p.x === head.x && p.y === head.y)) { playPremiumSfx(140, 0.4, 'triangle'); clearInterval(snakeInterval); alert('Oyun Bitti.'); return; }
+        snake.unshift(head);
+        if (head.x === sFood.x && head.y === sFood.y) {
+            playPremiumSfx(1050, 0.08); sScore += 10; updateCoins(3); document.getElementById('snake-score').textContent = sScore;
+            if (sScore >= 100) triggerAchievement('snake_100'); spawnSnakeFood();
+        } else { snake.pop(); }
+
+        const unit = sCanvas.width / 20;
+        sCtx.fillStyle = currentTheme === 'theme-classic' ? '#9bbc0f' : '#111'; sCtx.fillRect(0,0,sCanvas.width,sCanvas.height);
+        sCtx.fillStyle = getFoodColor(); sCtx.fillRect(sFood.x * unit + 1, sFood.y * unit + 1, unit - 2, unit - 2);
+        snake.forEach((p, idx) => { sCtx.fillStyle = idx === 0 ? varColor('--accent-color', '#0f1c04') : '#306230'; sCtx.fillRect(p.x * unit + 1, p.y * unit + 1, unit - 2, unit - 2); });
+    }
+    function varColor(cssVar, fallback) { return getComputedStyle(document.body).getPropertyValue(cssVar).trim() || fallback; }
+
+    // GİRDİ MOTORU
+    function sendInput(action) {
+        if (activeGame === 'tetris') {
+            if (action === 'LEFT') { tPiece.pos.x--; if (collideTetris()) tPiece.pos.x++; }
+            else if (action === 'RIGHT') { tPiece.pos.x++; if (collideTetris()) tPiece.pos.x--; }
+            else if (action === 'DOWN') { tPiece.pos.y++; if (collideTetris()) tPiece.pos.y--; }
+            else if (action === 'UP' || action === 'ACTION') { 
+                const m = tPiece.matrix; for (let y = 0; y < m.length; ++y) { for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]]; } m.forEach(r => r.reverse()); if (collideTetris()) { m.forEach(r => r.reverse()); for (let y = 0; y < m.length; ++y) { for (let x = 0; x < y; ++x) [m[x][y], m[y][x]] = [m[y][x], m[x][y]]; } }
+            }
+        } else if (activeGame === 'g2048') { move2048(action); } 
+          else if (activeGame === 'snake') {
+            if (action === 'LEFT' && sDir !== 'RIGHT') sDir = 'LEFT'; else if (action === 'RIGHT' && sDir !== 'LEFT') sDir = 'RIGHT'; else if (action === 'UP' && sDir !== 'DOWN') sDir = 'UP'; else if (action === 'DOWN' && sDir !== 'UP') sDir = 'DOWN';
+        }
+    }
+    document.addEventListener('keydown', (e) => {
+        let a = null; const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') a = 'UP'; else if (k === 'arrowdown' || k === 's') a = 'DOWN'; else if (k === 'arrowleft' || k === 'a') a = 'LEFT'; else if (k === 'arrowright' || k === 'd') a = 'RIGHT'; else if (e.key === ' ' || e.key === 'Enter') a = 'ACTION';
+        if (a) { e.preventDefault(); sendInput(a); }
+    });
+
+    document.body.className = currentTheme === 'theme-classic' ? '' : currentTheme;
+    document.getElementById('coin-amount').textContent = coins;
+    initMines(); playBackgroundMusic();
+</script>
 </body>
 </html>
