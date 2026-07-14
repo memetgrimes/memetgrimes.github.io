@@ -78,7 +78,7 @@
             background-color: var(--bg-main); color: var(--text-color);
             display: flex; align-items: center; justify-content: center;
             min-height: 100vh; width: 100vw; overflow-x: hidden; padding: 10px; transition: all 0.3s ease;
-            touch-action: none; /* Mobilde gereksiz sayfa kaymalarını önler */
+            touch-action: none;
         }
         .container {
             width: 100%; max-width: 550px; min-height: 95vh;
@@ -350,7 +350,6 @@
         earnedAchievements.push(id);
         localStorage.setItem('earned_achievements', JSON.stringify(earnedAchievements));
         
-        // Başarım sesi
         playPremiumSfx(1200, 0.1); setTimeout(() => playPremiumSfx(1500, 0.2), 80);
 
         const toastContainer = document.getElementById('achieve-toast-container');
@@ -415,7 +414,7 @@
         renderShop(); initMines(); init2048();
     }
 
-    // --- GELİŞMİŞ/PAHALI TEMAYA ÖZEL SES MOTORU ---
+    // --- SES SİSTEMİ ---
     let audioCtx = null; let musicEnabled = true; let sfxEnabled = true; let musicInterval = null; let noteIndex = 0;
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     function toggleMusic() { musicEnabled = !musicEnabled; document.getElementById('btn-music').classList.toggle('active', musicEnabled); initAudio(); if (!musicEnabled) clearInterval(musicInterval); else playBackgroundMusic(); }
@@ -429,7 +428,6 @@
         let type = forceType || 'sine';
         let freq = baseFreq;
 
-        // Tema pahalıysa ses efektlerini tamamen dönüştür
         if (!forceType) {
             if (currentTheme === 'theme-twd') { type = 'sawtooth'; freq = baseFreq * 0.7; } 
             else if (currentTheme === 'theme-got') { type = 'triangle'; freq = baseFreq * 1.2; } 
@@ -459,34 +457,56 @@
         }, 350);
     }
 
+    // ARKA PLANDA ÇÖKMEYİ ENGELLEYEN YENİ VE ARINDIRILMIŞ BOYUTLANDIRICI
     function setGameSize(size) {
         currentGlobalSize = size;
         document.getElementById('main-container').className = 'container sz-' + size;
         
-        // Hatalı boşluk temizlendi ve güvenli seçiciler kullanıldı
-        document.querySelectorAll('[id$="-size-s"], [id$="-size-m"]').forEach(b => b.classList.remove('active'));
-        
-        const suffix = size === 'small' ? '-size-s' : '-size-m';
-        document.querySelectorAll('[id$="' + suffix + '"]').forEach(b => b.classList.add('active'));
+        // Tüm boyut butonlarından "active" sınıfını tamamen kaldır
+        const allSizeBtns = [
+            'm-size-s', 'm-size-m',
+            't-size-s', 't-size-m',
+            'g-size-s', 'g-size-m',
+            's-size-s', 's-size-m'
+        ];
+        allSizeBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.remove('active');
+        });
 
+        // Seçilen boyut butonlarına "active" sınıfını ekle
+        const targetSuffix = size === 'small' ? '-size-s' : '-size-m';
+        const prefixes = ['m', 't', 'g', 's'];
+        prefixes.forEach(pref => {
+            const activeBtn = document.getElementById(pref + targetSuffix);
+            if (activeBtn) activeBtn.classList.add('active');
+        });
+
+        // Aktif oyunu yeniden yükle
         if (activeGame === 'mines') initMines(); 
         else if (activeGame === 'tetris') initTetris(); 
         else if (activeGame === 'g2048') init2048(); 
         else if (activeGame === 'snake') initSnake();
     }
 
-    // Tıklanmayan ve kilitlenen sekmeleri çözen ana fonksiyon
+    // SEKMELER ARASI GEÇİŞSİZ VE HATASIZ MOTOR
     function switchGame(game) {
         activeGame = game;
+        
+        // Sekme butonlarını temizle
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        // Oyun ekranlarını temizle
         document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
         
+        // İlgili sekmeyi ve ekranı aktif et
         const targetBtn = document.getElementById('tab' + game.charAt(0).toUpperCase() + game.slice(1));
         if (targetBtn) targetBtn.classList.add('active');
         
         const targetScreen = document.getElementById('screen-' + game);
         if (targetScreen) targetScreen.classList.add('active');
         
+        // Döngüsel çalışan zamanlayıcıları sıfırla
         clearInterval(minesInterval); 
         cancelAnimationFrame(tetrisAnimId); 
         clearInterval(snakeInterval);
@@ -499,7 +519,7 @@
     }
 
     // ==========================================
-    // 1. MAYIN TARLASI (PREMİUM GÖRSELLİ)
+    // 1. MAYIN TARLASI
     // ==========================================
     let mRows = 12, mCols = 12, mMines = 20, mBoard = [], mRevealed = 0, mFlagged = 0, mOver = false, mFirst = true, minesInterval = null, mSecs = 0;
     function getMineIcon() {
@@ -623,7 +643,7 @@
     }
 
     // ==========================================
-    // 3. 2048 (PREMİUM ELEMENT GÖRSELLİ)
+    // 3. 2048
     // ==========================================
     let grid2048 = [], score2048 = 0, gSize = 4;
     function get2048Text(val) {
@@ -689,7 +709,7 @@
     }
 
     // ==========================================
-    // 4. YILAN (PREMİUM GÖRSELLİ)
+    // 4. YILAN
     // ==========================================
     const sCanvas = document.getElementById('snake-canvas'); const sCtx = sCanvas.getContext('2d');
     let snake = [], sFood = {x:0, y:0}, sDir = 'RIGHT', snakeInterval = null, sScore = 0, sBaseSpeed = 150;
@@ -801,7 +821,7 @@
         screen.addEventListener('touchend', handleTouchEnd, { passive: false });
     });
 
-
+    // BAŞLANGIÇ AYARLARI
     document.body.className = currentTheme === 'theme-classic' ? '' : currentTheme;
     document.getElementById('coin-amount').textContent = coins;
     initMines(); playBackgroundMusic();
