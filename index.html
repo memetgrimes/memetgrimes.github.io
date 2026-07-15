@@ -538,7 +538,16 @@
         mMines = diff === 'easy' ? 10 : diff === 'normal' ? 20 : 35;
         document.getElementById('m-custom-count').value = mMines; initMines();
     }
-    function applyCustomMines() { let val = parseInt(document.getElementById('m-custom-count').value); if(!isNaN(val) && val > 2) { mMines = val; initMines(); } }
+    function applyCustomMines() {
+        const input = document.getElementById('m-custom-count');
+        let val = parseInt(input.value, 10);
+        if (isNaN(val)) return;
+        const maxMines = mRows * mCols - 9; // leave room for the guaranteed-safe first-click zone
+        val = Math.max(3, Math.min(val, maxMines));
+        input.value = val;
+        mMines = val;
+        initMines();
+    }
     
     function initMines() {
         mBoard = []; mRevealed = 0; mFlagged = 0; mOver = false; mFirst = true; mSecs = 0;
