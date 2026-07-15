@@ -314,10 +314,44 @@
     let activeGame = 'mines';
     let currentGlobalSize = 'medium';
 
-    let coins = parseInt(localStorage.getItem('console_coins') || 0);
-    let unlockedThemes = JSON.parse(localStorage.getItem('unlocked_themes') || '["theme-classic"]');
-    let currentTheme = localStorage.getItem('active_theme') || 'theme-classic';
-    let earnedAchievements = JSON.parse(localStorage.getItem('earned_achievements') || '[]');
+    // --- GÜVENLİ DEPOLAMA YARDIMCILARI ---
+    // localStorage gizli sekmede/devre dışıyken erişimde bile hata fırlatabilir,
+    // bozuk JSON ise tüm scripti çökertir. Hatalar yutulmaz; loglanıp güvenli
+    // bir varsayılana dönülür, böylece oyun çalışmaya devam eder.
+    function safeStorageGet(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            console.warn(`localStorage okunamadı ("${key}"):`, e);
+            return null;
+        }
+    }
+    function safeStorageSet(key, value) {
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (e) {
+            console.warn(`localStorage yazılamadı ("${key}"):`, e);
+            return false;
+        }
+    }
+    function safeJsonParse(raw, fallback) {
+        if (raw === null || raw === undefined) return fallback;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('Bozuk JSON verisi, varsayılana dönülüyor:', e);
+            return fallback;
+        }
+    }
+
+    let coins = parseInt(safeStorageGet('console_coins'), 10);
+    if (!Number.isFinite(coins)) coins = 0;
+    let unlockedThemes = safeJsonParse(safeStorageGet('unlocked_themes'), ['theme-classic']);
+    if (!Array.isArray(unlockedThemes)) unlockedThemes = ['theme-classic'];
+    let currentTheme = safeStorageGet('active_theme') || 'theme-classic';
+    let earnedAchievements = safeJsonParse(safeStorageGet('earned_achievements'), []);
+    if (!Array.isArray(earnedAchievements)) earnedAchievements = [];
 
     const THEMES = [
         { id: 'theme-classic', name: 'Klasik Retro', price: 0, desc: 'Orijinal arcade sesleri ve standart tasarımı.' },
@@ -340,7 +374,7 @@
 
     function updateCoins(amount) {
         coins += amount;
-        localStorage.setItem('console_coins', coins);
+        safeStorageSet('console_coins', coins);
         document.getElementById('coin-amount').textContent = coins;
         if (coins >= 300) triggerAchievement('rich_300');
     }
@@ -348,7 +382,7 @@
     function triggerAchievement(id) {
         if (earnedAchievements.includes(id)) return;
         earnedAchievements.push(id);
-        localStorage.setItem('earned_achievements', JSON.stringify(earnedAchievements));
+        safeStorageSet('earned_achievements', JSON.stringify(earnedAchievements));
         
         playPremiumSfx(1200, 0.1); setTimeout(() => playPremiumSfx(1500, 0.2), 80);
 
@@ -401,7 +435,7 @@
     function buyTheme(id, price) {
         if (coins >= price) {
             updateCoins(-price); unlockedThemes.push(id);
-            localStorage.setItem('unlocked_themes', JSON.stringify(unlockedThemes));
+            safeStorageSet('unlocked_themes', JSON.stringify(unlockedThemes));
             applyTheme(id); renderShop();
         } else {
             playPremiumSfx(120, 0.4, 'sawtooth'); alert('Jetonun yetersiz dostum!');
@@ -409,22 +443,31 @@
     }
 
     function applyTheme(id) {
-        currentTheme = id; localStorage.setItem('active_theme', id);
+        currentTheme = id; safeStorageSet('active_theme', id);
         document.body.className = id === 'theme-classic' ? '' : id;
         renderShop(); initMines(); init2048();
     }
 
     // --- SES SİSTEMİ ---
     let audioCtx = null; let musicEnabled = true; let sfxEnabled = true; let musicInterval = null; let noteIndex = 0;
-    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    function initAudio() {
+        if (audioCtx) return;
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) { console.warn('Web Audio API bu tarayıcıda desteklenmiyor.'); return; }
+        try {
+            audioCtx = new Ctx();
+        } catch (e) {
+            console.warn('AudioContext oluşturulamadı:', e);
+            audioCtx = null;
+        }
+    }
     function toggleMusic() { musicEnabled = !musicEnabled; document.getElementById('btn-music').classList.toggle('active', musicEnabled); initAudio(); if (!musicEnabled) clearInterval(musicInterval); else playBackgroundMusic(); }
     function toggleSfx() { sfxEnabled = !sfxEnabled; document.getElementById('btn-sfx').classList.toggle('active', sfxEnabled); initAudio(); }
 
     function playPremiumSfx(baseFreq, duration, forceType = null) {
         if (!sfxEnabled) return; initAudio();
-        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        
+        if (!audioCtx) return;
+
         let type = forceType || 'sine';
         let freq = baseFreq;
 
@@ -435,25 +478,37 @@
             else if (currentTheme === 'theme-breakingbad') { type = 'square'; freq = baseFreq * 0.9; }
         }
 
-        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.start(); osc.stop(audioCtx.currentTime + duration);
+        try {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            console.warn('Ses efekti çalınamadı:', e);
+        }
     }
 
     const SONGS = { mines:[140,160,140], tetris:[650,520,580,440], g2048:[300,400,500], snake:[200,250,220] };
     function playBackgroundMusic() {
         clearInterval(musicInterval); if (!musicEnabled || ['shop','achieve'].includes(activeGame)) return;
-        initAudio(); noteIndex = 0;
+        initAudio(); if (!audioCtx) return; noteIndex = 0;
         musicInterval = setInterval(() => {
+            if (!audioCtx) return;
             const song = SONGS[activeGame]; if (!song) return;
             const note = song[noteIndex % song.length];
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(note, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.28); noteIndex++;
+            try {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(note, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.28); noteIndex++;
+            } catch (e) {
+                console.warn('Arka plan müziği çalınamadı:', e);
+                clearInterval(musicInterval);
+            }
         }, 350);
     }
 
@@ -657,7 +712,7 @@
 
     function init2048() {
         score2048 = 0; document.getElementById('g2048-score').textContent = '0';
-        document.getElementById('g2048-best').textContent = localStorage.getItem('best_2048') || '0';
+        document.getElementById('g2048-best').textContent = safeStorageGet('best_2048') || '0';
         document.getElementById('title-2048').textContent = currentTheme === 'theme-breakingbad' ? 'Breaking 2048' : '2048';
         grid2048 = Array.from({length: gSize}, () => Array(gSize).fill(0));
         const wrapper = document.getElementById('grid-2048-wrapper'); wrapper.innerHTML = '';
@@ -724,7 +779,7 @@
     function setSnakeDiff(diff) { sBaseSpeed = diff === 'easy' ? 200 : 130; initSnake(); }
     function initSnake() {
         sScore = 0; sDir = 'RIGHT'; document.getElementById('snake-score').textContent = '0';
-        document.getElementById('snake-best').textContent = localStorage.getItem('best_snake') || '0';
+        document.getElementById('snake-best').textContent = safeStorageGet('best_snake') || '0';
         const wrapper = document.getElementById('screen-snake');
         const size = Math.min(Math.floor((wrapper.clientHeight - 120) / 20), Math.floor((wrapper.clientWidth - 20) / 20));
         sCanvas.width = sCanvas.height = size * 20; snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
